@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Arcadia Quest</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<style>
+body { margin:0; background:#111; color:#fff; font-family:Arial; text-align:center; }
+canvas { background:#222; display:block; margin:auto; }
+#ui { padding:10px; }
+</style>
+</head>
+<body>
+<h2>Arcadia Quest</h2>
+<div id="ui">Use arrow keys or WASD to move. Collect stars, avoid enemies, reach the portal.</div>
+<canvas id="game" width="600" height="400"></canvas>
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+let keys = {};
+document.addEventListener("keydown", e=>keys[e.key]=true);
+document.addEventListener("keyup", e=>keys[e.key]=false);
+
+let player = {x:50,y:200,w:20,h:20,speed:3};
+let level=1, score=0;
+let stars=[], enemies=[], portal={x:560,y:180,w:30,h:40};
+
+function spawn(){
+  stars=[]; enemies=[];
+  for(let i=0;i<5+level;i++){
+    stars.push({x:Math.random()*560,y:Math.random()*360,w:10,h:10});
+  }
+  for(let i=0;i<2+level;i++){
+    enemies.push({x:Math.random()*560,y:Math.random()*360,w:20,h:20,dx:(Math.random()*2+1),dy:(Math.random()*2+1)});
+  }
+}
+spawn();
+
+function collide(a,b){
+  return a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y;
+}
+
+function update(){
+  if(keys["ArrowUp"]||keys["w"]) player.y-=player.speed;
+  if(keys["ArrowDown"]||keys["s"]) player.y+=player.speed;
+  if(keys["ArrowLeft"]||keys["a"]) player.x-=player.speed;
+  if(keys["ArrowRight"]||keys["d"]) player.x+=player.speed;
+
+  enemies.forEach(e=>{
+    e.x+=e.dx; e.y+=e.dy;
+    if(e.x<0||e.x>580) e.dx*=-1;
+    if(e.y<0||e.y>380) e.dy*=-1;
+    if(collide(player,e)){ alert("Game Over! Score: "+score); location.reload(); }
+  });
+
+  stars = stars.filter(s=>{
+    if(collide(player,s)){ score+=10; return false; }
+    return true;
+  });
+
+  if(stars.length===0 && collide(player,portal)){
+    level++; spawn(); player.x=50; player.y=200;
+  }
+}
+
+function draw(){
+  ctx.clearRect(0,0,600,400);
+  ctx.fillStyle="lime"; ctx.fillRect(player.x,player.y,player.w,player.h);
+  ctx.fillStyle="yellow"; stars.forEach(s=>ctx.fillRect(s.x,s.y,s.w,s.h));
+  ctx.fillStyle="red"; enemies.forEach(e=>ctx.fillRect(e.x,e.y,e.w,e.h));
+  ctx.fillStyle="blue"; ctx.fillRect(portal.x,portal.y,portal.w,portal.h);
+  ctx.fillStyle="white"; ctx.fillText("Level: "+level+" Score: "+score,10,15);
+}
+
+function loop(){ update(); draw(); requestAnimationFrame(loop); }
+loop();
+</script>
+</body>
+</html>
