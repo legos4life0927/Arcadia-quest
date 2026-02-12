@@ -2,78 +2,229 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Arcadia Quest</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Arcadia Portal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-body { margin:0; background:#111; color:#fff; font-family:Arial; text-align:center; }
-canvas { background:#222; display:block; margin:auto; }
-#ui { padding:10px; }
+body{margin:0;background:#0b0f14;color:#fff;font-family:Arial;text-align:center}
+button{padding:10px 20px;margin:6px;font-size:16px;cursor:pointer;border-radius:6px}
+canvas{background:#111;display:none;margin:auto;border:2px solid #555}
+#menu{padding:20px}
+h1{color:#6cf}
 </style>
 </head>
 <body>
-<h2>Arcadia Quest</h2>
-<div id="ui">Use arrow keys or WASD to move. Collect stars, avoid enemies, reach the portal.</div>
+
+<h1>Arcadia Portal</h1>
+<div id="menu">
+<p>Select a world:</p>
+<button onclick="start(1)">Arcadia Quest</button>
+<button onclick="start(2)">Astro Dodge</button>
+<button onclick="start(3)">Brick Breaker</button>
+<button onclick="start(4)">Snake Classic</button>
+<button onclick="start(5)">Falling Words</button>
+<button onclick="start(6)">Maze Runner</button>
+<button onclick="start(7)">Sandbox Realm</button>
+<p id="hi"></p>
+</div>
+
 <canvas id="game" width="600" height="400"></canvas>
+<br>
+<button onclick="back()">Back to Menu</button>
+
 <script>
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
-let keys = {};
-document.addEventListener("keydown", e=>keys[e.key]=true);
-document.addEventListener("keyup", e=>keys[e.key]=false);
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+let keys={},loopId,score=0,hi=localStorage.getItem("hi")||0;
+document.getElementById("hi").innerText="High Score: "+hi;
+document.addEventListener("keydown",e=>keys[e.key]=true);
+document.addEventListener("keyup",e=>keys[e.key]=false);
+function sfx(){new Audio("https://actions.google.com/sounds/v1/cartoon/pop.ogg").play();}
+function back(){
+canvas.style.display="none";
+document.getElementById("menu").style.display="block";
+cancelAnimationFrame(loopId);
+}
 
-let player = {x:50,y:200,w:20,h:20,speed:3};
-let level=1, score=0;
-let stars=[], enemies=[], portal={x:560,y:180,w:30,h:40};
+function start(n){
+score=0;
+document.getElementById("menu").style.display="none";
+canvas.style.display="block";
+if(n===1)arcadia();
+if(n===2)astro();
+if(n===3)bricks();
+if(n===4)snake();
+if(n===5)words();
+if(n===6)maze();
+if(n===7)sandbox();
+}
 
+/* -------- ARCADIA QUEST -------- */
+function arcadia(){
+let p={x:50,y:200,w:20,h:20,s:3},stars=[],en=[],lvl=1;
+let portal={x:560,y:180,w:30,h:40};
 function spawn(){
-  stars=[]; enemies=[];
-  for(let i=0;i<5+level;i++){
-    stars.push({x:Math.random()*560,y:Math.random()*360,w:10,h:10});
-  }
-  for(let i=0;i<2+level;i++){
-    enemies.push({x:Math.random()*560,y:Math.random()*360,w:20,h:20,dx:(Math.random()*2+1),dy:(Math.random()*2+1)});
-  }
+stars=[];en=[];
+for(let i=0;i<5+lvl;i++)stars.push({x:Math.random()*560,y:Math.random()*360,w:10,h:10});
+for(let i=0;i<2+lvl;i++)en.push({x:Math.random()*560,y:Math.random()*360,w:20,h:20,dx:2,dy:2});
 }
 spawn();
-
-function collide(a,b){
-  return a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y;
+function col(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;}
+function loop(){
+if(keys.ArrowUp||keys.w)p.y-=p.s;
+if(keys.ArrowDown||keys.s)p.y+=p.s;
+if(keys.ArrowLeft||keys.a)p.x-=p.s;
+if(keys.ArrowRight||keys.d)p.x+=p.s;
+en.forEach(e=>{
+e.x+=e.dx;e.y+=e.dy;
+if(e.x<0||e.x>580)e.dx*=-1;
+if(e.y<0||e.y>380)e.dy*=-1;
+if(col(p,e)){alert("Game Over");back();}
+});
+stars=stars.filter(s=>!col(p,s));
+if(stars.length===0&&col(p,portal)){lvl++;score+=50;sfx();spawn();}
+ctx.clearRect(0,0,600,400);
+ctx.fillStyle="lime";ctx.fillRect(p.x,p.y,p.w,p.h);
+ctx.fillStyle="yellow";stars.forEach(s=>ctx.fillRect(s.x,s.y,s.w,s.h));
+ctx.fillStyle="red";en.forEach(e=>ctx.fillRect(e.x,e.y,e.w,e.h));
+ctx.fillStyle="cyan";ctx.fillRect(portal.x,portal.y,portal.w,portal.h);
+ctx.fillStyle="white";ctx.fillText("Level "+lvl+" Score "+score,10,15);
+loopId=requestAnimationFrame(loop);
 }
-
-function update(){
-  if(keys["ArrowUp"]||keys["w"]) player.y-=player.speed;
-  if(keys["ArrowDown"]||keys["s"]) player.y+=player.speed;
-  if(keys["ArrowLeft"]||keys["a"]) player.x-=player.speed;
-  if(keys["ArrowRight"]||keys["d"]) player.x+=player.speed;
-
-  enemies.forEach(e=>{
-    e.x+=e.dx; e.y+=e.dy;
-    if(e.x<0||e.x>580) e.dx*=-1;
-    if(e.y<0||e.y>380) e.dy*=-1;
-    if(collide(player,e)){ alert("Game Over! Score: "+score); location.reload(); }
-  });
-
-  stars = stars.filter(s=>{
-    if(collide(player,s)){ score+=10; return false; }
-    return true;
-  });
-
-  if(stars.length===0 && collide(player,portal)){
-    level++; spawn(); player.x=50; player.y=200;
-  }
-}
-
-function draw(){
-  ctx.clearRect(0,0,600,400);
-  ctx.fillStyle="lime"; ctx.fillRect(player.x,player.y,player.w,player.h);
-  ctx.fillStyle="yellow"; stars.forEach(s=>ctx.fillRect(s.x,s.y,s.w,s.h));
-  ctx.fillStyle="red"; enemies.forEach(e=>ctx.fillRect(e.x,e.y,e.w,e.h));
-  ctx.fillStyle="blue"; ctx.fillRect(portal.x,portal.y,portal.w,portal.h);
-  ctx.fillStyle="white"; ctx.fillText("Level: "+level+" Score: "+score,10,15);
-}
-
-function loop(){ update(); draw(); requestAnimationFrame(loop); }
 loop();
+}
+
+/* -------- ASTRO DODGE -------- */
+function astro(){
+let ship={x:280,y:350,w:30,h:20},rocks=[];
+function loop(){
+if(keys.ArrowLeft)ship.x-=5;
+if(keys.ArrowRight)ship.x+=5;
+if(Math.random()<0.03)rocks.push({x:Math.random()*580,y:0,w:20,h:20});
+rocks.forEach(r=>r.y+=4);
+rocks.forEach(r=>{
+if(r.x<ship.x+ship.w&&r.x+r.w>ship.x&&r.y<ship.y+ship.h&&r.y+r.h>ship.y){
+alert("Crashed!");back();
+}
+});
+ctx.clearRect(0,0,600,400);
+ctx.fillStyle="cyan";ctx.fillRect(ship.x,ship.y,ship.w,ship.h);
+ctx.fillStyle="orange";rocks.forEach(r=>ctx.fillRect(r.x,r.y,r.w,r.h));
+rocks=rocks.filter(r=>r.y<400);
+loopId=requestAnimationFrame(loop);
+}
+loop();
+}
+
+/* -------- BRICK BREAKER -------- */
+function bricks(){
+let ball={x:300,y:200,dx:3,dy:-3},p={x:250,w:100};
+let blocks=[];
+for(let i=0;i<5;i++)for(let j=0;j<8;j++)blocks.push({x:70*j+20,y:30*i+20,w:60,h:20});
+function loop(){
+if(keys.ArrowLeft)p.x-=5;
+if(keys.ArrowRight)p.x+=5;
+ball.x+=ball.dx;ball.y+=ball.dy;
+if(ball.x<0||ball.x>600)ball.dx*=-1;
+if(ball.y<0)ball.dy*=-1;
+if(ball.y>400){alert("Game Over");back();}
+if(ball.y>360&&ball.x>p.x&&ball.x<p.x+p.w)ball.dy*=-1;
+blocks=blocks.filter(b=>{
+if(ball.x>b.x&&ball.x<b.x+b.w&&ball.y>b.y&&ball.y<b.y+b.h){ball.dy*=-1;score+=10;return false;}
+return true;
+});
+ctx.clearRect(0,0,600,400);
+ctx.fillRect(p.x,380,p.w,10);
+blocks.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
+ctx.beginPath();ctx.arc(ball.x,ball.y,8,0,Math.PI*2);ctx.fill();
+loopId=requestAnimationFrame(loop);
+}
+loop();
+}
+
+/* -------- SNAKE -------- */
+function snake(){
+let s=[{x:10,y:10}],d={x:10,y:0},f={x:100,y:100};
+function loop(){
+if(keys.ArrowUp)d={x:0,y:-10};
+if(keys.ArrowDown)d={x:0,y:10};
+if(keys.ArrowLeft)d={x:-10,y:0};
+if(keys.ArrowRight)d={x:10,y:0};
+let h={x:s[0].x+d.x,y:s[0].y+d.y};
+s.unshift(h);
+if(h.x===f.x&&h.y===f.y){score+=10;f={x:Math.floor(Math.random()*59)*10,y:Math.floor(Math.random()*39)*10};}
+else s.pop();
+ctx.clearRect(0,0,600,400);
+ctx.fillStyle="lime";s.forEach(p=>ctx.fillRect(p.x,p.y,10,10));
+ctx.fillStyle="red";ctx.fillRect(f.x,f.y,10,10);
+loopId=requestAnimationFrame(loop);
+}
+loop();
+}
+
+/* -------- FALLING WORDS -------- */
+function words(){
+let list=["school","code","arcadia","portal","keyboard","build"],cur="",y=0;
+document.onkeydown=e=>{
+if(e.key===cur[0])cur=cur.slice(1);
+};
+function loop(){
+if(cur===""){cur=list[Math.floor(Math.random()*list.length)];y=0;}
+y+=1;
+ctx.clearRect(0,0,600,400);
+ctx.fillText(cur,280,y);
+if(y>400){alert("Missed!");back();}
+loopId=requestAnimationFrame(loop);
+}
+loop();
+}
+
+/* -------- MAZE -------- */
+function maze(){
+let p={x:10,y:10};
+function loop(){
+if(keys.ArrowUp)p.y-=3;
+if(keys.ArrowDown)p.y+=3;
+if(keys.ArrowLeft)p.x-=3;
+if(keys.ArrowRight)p.x+=3;
+ctx.clearRect(0,0,600,400);
+ctx.strokeRect(0,0,600,400);
+ctx.fillRect(580,380,20,20);
+ctx.fillStyle="lime";ctx.fillRect(p.x,p.y,10,10);
+if(p.x>570&&p.y>370){alert("Escaped!");back();}
+loopId=requestAnimationFrame(loop);
+}
+loop();
+}
+
+/* -------- SANDBOX REALM -------- */
+function sandbox(){
+let grid=[],size=20,player={x:5,y:5,hp:5},mobs=[];
+for(let y=0;y<20;y++){grid[y]=[];for(let x=0;x<30;x++)grid[y][x]=0;}
+function loop(){
+if(keys.ArrowUp)player.y--;
+if(keys.ArrowDown)player.y++;
+if(keys.ArrowLeft)player.x--;
+if(keys.ArrowRight)player.x++;
+if(keys.b)grid[player.y][player.x]=1;
+if(keys.c)grid[player.y][player.x]=0;
+if(Math.random()<0.02)mobs.push({x:Math.floor(Math.random()*30),y:0});
+mobs.forEach(m=>m.y++);
+mobs=mobs.filter(m=>{
+if(m.x===player.x&&m.y===player.y){player.hp--;sfx();return false;}
+return m.y<20;
+});
+ctx.clearRect(0,0,600,400);
+for(let y=0;y<20;y++)for(let x=0;x<30;x++){
+if(grid[y][x]){ctx.fillStyle="#888";ctx.fillRect(x*20,y*20,20,20);}
+}
+ctx.fillStyle="lime";ctx.fillRect(player.x*20,player.y*20,20,20);
+ctx.fillStyle="red";mobs.forEach(m=>ctx.fillRect(m.x*20,m.y*20,20,20));
+ctx.fillStyle="white";ctx.fillText("HP:"+player.hp+"  B=Build  C=Break",10,15);
+if(player.hp<=0){alert("Defeated");back();}
+loopId=requestAnimationFrame(loop);
+}
+loop();
+}
 </script>
 </body>
 </html>
