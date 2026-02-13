@@ -5,123 +5,113 @@
 <title>Arcadia</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-html,body{margin:0;padding:0;background:#000;color:#fff;font-family:Arial;overflow:hidden}
-canvas{display:block}
-#menu{
- position:absolute;top:0;left:0;width:100%;height:100%;
- background:linear-gradient(120deg,#0ff,#00f,#f0f);
- animation:bg 12s infinite alternate;
- display:flex;flex-direction:column;align-items:center;justify-content:center;
-}
-@keyframes bg{0%{filter:hue-rotate(0deg)}100%{filter:hue-rotate(360deg)}}
-button{
- padding:15px 30px;margin:8px;font-size:18px;border:none;border-radius:8px;
- background:#111;color:#0ff;cursor:pointer
-}
-#gameFrame{position:absolute;top:0;left:0;width:100%;height:100%;display:none;border:none}
-#back{position:absolute;top:10px;left:10px;z-index:10;display:none}
+body{margin:0;background:#000;color:#fff;font-family:Arial;text-align:center}
+#menu{height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;
+background:radial-gradient(circle,#223,#000)}
+button{padding:12px 20px;margin:6px;font-size:16px;border-radius:8px;border:none}
+canvas{display:none;background:#111;margin:auto}
 </style>
 </head>
-
 <body>
+
 <div id="menu">
-<h1>ARCADIA</h1>
-<button onclick="start('sandbox')">3D Sandbox</button>
-<button onclick="start('side')">2D Side Scroller</button>
-<button onclick="start('shooter')">Top-Down Shooter</button>
-<button onclick="start('maze')">Maze Runner</button>
-<button onclick="start('arena')">Arena Survival</button>
-<hr>
-<button onclick="external('https://moto-x3m.net/moto-x3m')">Moto X3M 1</button>
-<button onclick="external('https://moto-x3m.net/moto-x3m-2')">Moto X3M 2</button>
-<button onclick="external('https://moto-x3m.net/moto-x3m-3')">Moto X3M 3</button>
-<button onclick="external('https://moto-x3m.net/moto-x3m-4')">Moto X3M 4</button>
+<h1>Arcadia</h1>
+<button onclick="startArcadia()">Arcadia Quest</button>
+<button onclick="startShooter()">Top-Down Shooter</button>
+<button onclick="startSide()">Side Scroller</button>
+<button onclick="startMaze()">Maze Runner</button>
+<button onclick="startArena()">Arena Survival</button>
 </div>
 
-<button id="back" onclick="menu()">⬅ Menu</button>
-<iframe id="gameFrame"></iframe>
-<canvas id="c"></canvas>
+<canvas id="c" width="800" height="450"></canvas>
+<br><button onclick="back()">Back</button>
 
 <script>
 const c=document.getElementById("c"),ctx=c.getContext("2d");
-resize();window.onresize=resize;
-function resize(){c.width=innerWidth;c.height=innerHeight}
+let keys={},loop=null;
+document.onkeydown=e=>keys[e.key.toLowerCase()]=true;
+document.onkeyup=e=>keys[e.key.toLowerCase()]=false;
 
-const keys={};onkeydown=e=>keys[e.key.toLowerCase()]=true;
-onkeyup=e=>keys[e.key.toLowerCase()]=false;
-
-let mode=null,player={x:200,y:200,z:0,vx:0,vy:0,hp:100},blocks=[],bullets=[],enemies=[];
-
-function menu(){
-mode=null;
+function back(){
+cancelAnimationFrame(loop);
 c.style.display="none";
-document.getElementById("menu").style.display="flex";
-document.getElementById("back").style.display="none";
-document.getElementById("gameFrame").style.display="none";
+menu.style.display="flex";
 }
 
-function external(url){
-document.getElementById("menu").style.display="none";
-document.getElementById("gameFrame").src=url;
-document.getElementById("gameFrame").style.display="block";
-document.getElementById("back").style.display="block";
+function clear(){ctx.clearRect(0,0,c.width,c.height);}
+
+function startArcadia(){
+menu.style.display="none";c.style.display="block";
+let p={x:50,y:200},stars=[{x:300,y:200}],en=[];
+function step(){
+p.x+=(keys.d-keys.a)*3;
+p.y+=(keys.s-keys.w)*3;
+clear();
+ctx.fillStyle="lime";ctx.fillRect(p.x,p.y,20,20);
+ctx.fillStyle="yellow";stars.forEach(s=>ctx.fillRect(s.x,s.y,10,10));
+loop=requestAnimationFrame(step);
+}
+step();
 }
 
-function start(m){
-mode=m;
-c.style.display="block";
-document.getElementById("menu").style.display="none";
-document.getElementById("back").style.display="block";
-document.getElementById("gameFrame").style.display="none";
-player={x:200,y:200,z:0,vx:0,vy:0,hp:100};
-blocks=[];bullets=[];enemies=[];
-for(let i=0;i<20;i++)blocks.push({x:Math.random()*800,y:Math.random()*600,z:0});
-for(let i=0;i<10;i++)enemies.push({x:Math.random()*800,y:Math.random()*600,hp:3});
+function startShooter(){
+menu.style.display="none";c.style.display="block";
+let p={x:400,y:225},bul=[],en=[{x:100,y:100}];
+function step(){
+p.x+=(keys.d-keys.a)*4;
+p.y+=(keys.s-keys.w)*4;
+if(keys[" "])bul.push({x:p.x,y:p.y});
+bul.forEach(b=>b.x+=5);
+clear();
+ctx.fillStyle="cyan";ctx.fillRect(p.x,p.y,20,20);
+ctx.fillStyle="red";en.forEach(e=>ctx.fillRect(e.x,e.y,20,20));
+ctx.fillStyle="yellow";bul.forEach(b=>ctx.fillRect(b.x,b.y,5,5));
+loop=requestAnimationFrame(step);
+}
+step();
 }
 
-function update(){
-if(!mode)return;
-player.vx*=0.85;player.vy*=0.85;
-if(keys.w)player.vy-=0.5;
-if(keys.s)player.vy+=0.5;
-if(keys.a)player.vx-=0.5;
-if(keys.d)player.vx+=0.5;
-player.x+=player.vx;player.y+=player.vy;
-
-if(keys[" "]){
-bullets.push({x:player.x,y:player.y,dx:5,dy:0});
+function startSide(){
+menu.style.display="none";c.style.display="block";
+let p={x:50,y:300,vy:0};
+function step(){
+if(keys.w&&p.y>=300)p.vy=-12;
+p.vy+=0.6;p.y+=p.vy;
+clear();
+ctx.fillRect(p.x,p.y,20,20);
+loop=requestAnimationFrame(step);
+}
+step();
 }
 
-bullets.forEach(b=>{b.x+=b.dx;b.y+=b.dy});
-bullets=bullets.filter(b=>b.x<c.width&&b.x>0);
-
-enemies.forEach(e=>{
-let dx=player.x-e.x,dy=player.y-e.y;
-let d=Math.hypot(dx,dy);
-e.x+=dx/d*0.5;e.y+=dy/d*0.5;
-});
+function startMaze(){
+menu.style.display="none";c.style.display="block";
+let p={x:10,y:10};
+function step(){
+p.x+=(keys.d-keys.a)*2;
+p.y+=(keys.s-keys.w)*2;
+clear();
+ctx.strokeRect(0,0,800,450);
+ctx.fillRect(p.x,p.y,15,15);
+loop=requestAnimationFrame(step);
+}
+step();
 }
 
-function draw(){
-ctx.clearRect(0,0,c.width,c.height);
-ctx.fillStyle="#0f0";
-ctx.beginPath();ctx.arc(player.x,player.y,10,0,7);ctx.fill();
-
-ctx.fillStyle="#555";
-blocks.forEach(b=>ctx.fillRect(b.x,b.y,20,20));
-
-ctx.fillStyle="#f00";
-enemies.forEach(e=>ctx.fillRect(e.x,e.y,20,20));
-
-ctx.fillStyle="#ff0";
-bullets.forEach(b=>ctx.fillRect(b.x,b.y,5,5));
+function startArena(){
+menu.style.display="none";c.style.display="block";
+let p={x:400,y:225},en=[{x:100,y:100}];
+function step(){
+p.x+=(keys.d-keys.a)*3;
+p.y+=(keys.s-keys.w)*3;
+en.forEach(e=>{e.x+=(p.x-e.x)/100;e.y+=(p.y-e.y)/100;});
+clear();
+ctx.fillStyle="lime";ctx.fillRect(p.x,p.y,20,20);
+ctx.fillStyle="red";en.forEach(e=>ctx.fillRect(e.x,e.y,20,20));
+loop=requestAnimationFrame(step);
 }
-
-function loop(){
-update();draw();
-requestAnimationFrame(loop);
+step();
 }
-loop();
 </script>
 </body>
 </html>
